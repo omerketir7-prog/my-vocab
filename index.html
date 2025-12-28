@@ -3,71 +3,331 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>My Vocab</title>
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#111111" />
+  <title>My Vocab (Flashcards)</title>
   <style>
-    body { font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial; margin: 0; background:#0b0b0b; color:#f5f5f5; }
-    .wrap { max-width: 720px; margin: 0 auto; padding: 18px; }
-    .card { background:#141414; border:1px solid #262626; border-radius:16px; padding:18px; }
-    .row { display:flex; gap:10px; flex-wrap:wrap; }
-    button, input[type="file"] {
-      background:#1f1f1f; color:#f5f5f5; border:1px solid #2e2e2e; border-radius:12px;
-      padding:10px 12px; font-size:16px;
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background:#0b0f14; color:#e8eef6; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .card {
+      background: #121a24; border:1px solid #1c2a3a; border-radius:18px;
+      overflow:hidden; box-shadow: 0 10px 30px rgba(0,0,0,.35);
     }
-    button:active { transform: scale(0.99); }
-    .big { font-size: 28px; line-height: 1.2; margin: 10px 0 0; }
-    .muted { color:#bdbdbd; font-size: 14px; }
-    .sep { height: 1px; background:#262626; margin: 14px 0; }
-    .pill { display:inline-block; padding:6px 10px; border:1px solid #2e2e2e; border-radius:999px; font-size:13px; color:#cfcfcf; }
-    .space { height: 10px; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid #1c2a3a; }
+    .pill { padding:8px 10px; border-radius:999px; background:#0e1620; border:1px solid #1c2a3a; font-size:13px; color:#cfe1f6; }
+    button, .btn {
+      background:#1a2a3d; border:1px solid #27425c; color:#e8eef6;
+      padding:10px 12px; border-radius:12px; cursor:pointer; font-weight:600;
+    }
+    button:hover { filter: brightness(1.06); }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-ghost { background:#0e1620; border:1px solid #1c2a3a; }
+    .btn-good { background:#173a2a; border-color:#2b6b4d; }
+    .btn-bad { background:#3a1d1d; border-color:#7a3a3a; }
+    .grid { display:grid; grid-template-columns: 1.2fr .8fr; gap:12px; }
+    @media (max-width: 860px){ .grid{ grid-template-columns:1fr; } }
+    .imgbox { position:relative; aspect-ratio: 16/10; background:#0e1620; }
+    .imgbox img { width:100%; height:100%; object-fit:cover; display:block; }
+    .imgcap { position:absolute; left:10px; bottom:10px; padding:6px 10px; border-radius:999px; background: rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.15); font-size:12px; }
+    .qa { padding:14px; }
+    .q { font-size: 22px; font-weight:800; line-height:1.2; margin: 0 0 10px; }
+    .a {
+      font-size: 20px; font-weight:700; margin:0;
+      padding: 12px; border-radius:14px; border:1px dashed #2b425a; background:#0e1620;
+      min-height: 54px; display:flex; align-items:center;
+    }
+    .muted { color:#9fb6cc; font-size:13px; }
+    textarea {
+      width:100%; min-height: 160px; resize: vertical;
+      background:#0e1620; border:1px solid #1c2a3a; border-radius:14px; color:#e8eef6;
+      padding:12px; font-size:14px;
+    }
+    .panel { padding:14px; }
+    .h { margin: 0 0 8px; font-size:16px; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding:2px 6px; border-radius:8px; background:#0e1620; border:1px solid #1c2a3a; }
+    .small { font-size: 12px; color:#9fb6cc; }
+    .sep { height:1px; background:#1c2a3a; margin:12px 0; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="row" style="justify-content:space-between; align-items:center;">
-      <div>
-        <div class="pill">My Vocab • Offline</div>
-        <div class="muted" id="stats">0 kart</div>
+    <div class="row" style="justify-content:space-between; margin-bottom:12px;">
+      <div class="row">
+        <div class="pill">📸 Resimli Flashcard</div>
+        <div class="pill" id="modePill">TR → EN</div>
+        <div class="pill" id="progressPill">0 / 0</div>
       </div>
       <div class="row">
-        <button id="btnShuffle">Karıştır</button>
-        <button id="btnReset">Sıfırla</button>
+        <button class="btn-ghost" id="btnMode">Yön Değiştir</button>
+        <button class="btn-ghost" id="btnShuffle">Karıştır</button>
+        <button class="btn-ghost" id="btnReset">Sıfırla</button>
       </div>
     </div>
 
-    <div class="space"></div>
+    <div class="grid">
+      <div class="card">
+        <div class="topbar">
+          <div class="muted">Kart</div>
+          <div class="row">
+            <button id="btnPrev" class="btn-ghost">◀</button>
+            <button id="btnFlip">Çevir (Space)</button>
+            <button id="btnNext" class="btn-ghost">▶</button>
+          </div>
+        </div>
 
-    <div class="card">
-      <div class="muted" id="modeLabel">Ön yüz: İngilizce</div>
-      <div class="big" id="frontText">CSV içe aktar</div>
-      <div class="sep"></div>
-      <div class="muted" id="backLabel" style="display:none;">Arka yüz: Türkçe</div>
-      <div class="big" id="backText" style="display:none;"></div>
+        <div class="imgbox">
+          <img id="img" alt="card image" />
+          <div class="imgcap" id="imgCap">image</div>
+        </div>
 
-      <div class="space"></div>
-      <div class="row">
-        <button id="btnFlip">Çevir</button>
-        <button id="btnPrev">←</button>
-        <button id="btnNext">→</button>
+        <div class="qa">
+          <p class="q" id="question">—</p>
+          <p class="a" id="answer">Cevap gizli</p>
+
+          <div class="row" style="margin-top:12px;">
+            <button class="btn-bad" id="btnBad">Yanlış</button>
+            <button class="btn-good" id="btnGood">Doğru</button>
+            <div class="muted" id="hint" style="margin-left:auto;">Kısayol: <span class="kbd">Space</span> çevir</div>
+          </div>
+        </div>
       </div>
 
-      <div class="sep"></div>
+      <div class="card">
+        <div class="topbar">
+          <div class="muted">Kelimeleri yükle</div>
+          <button class="btn-ghost" id="btnLoadDemo">Demo yükle</button>
+        </div>
+        <div class="panel">
+          <p class="h">Format (her satır 1 kart):</p>
+          <p class="small">
+            <span class="kbd">Türkçe</span> + TAB + <span class="kbd">English</span><br/>
+            İstersen 3. sütun olarak <span class="kbd">image url</span> ekleyebilirsin.
+          </p>
+          <div class="sep"></div>
 
-      <div class="muted">Excel’den dışa aktar: CSV (UTF-8). Sütunlar: English, Turkish</div>
-      <div class="row" style="margin-top:10px;">
-        <input type="file" id="fileInput" accept=".csv,.txt" />
-        <button id="btnExport">Dışa Aktar</button>
+          <textarea id="input" spellcheck="false" placeholder="Örn:
+baş ağrısı	headache
+ara sıra	once in a while
+kaza	accident
+..."></textarea>
+
+          <div class="row" style="margin-top:12px;">
+            <button id="btnImport">İçe aktar</button>
+            <button id="btnExport" class="btn-ghost">TSV dışa aktar</button>
+          </div>
+
+          <p class="small" style="margin-top:10px;">
+            Not: Resimler internetten gelir (Unsplash). Özel resim istersen 3. sütuna URL yapıştır.
+          </p>
+        </div>
       </div>
-    </div>
-
-    <div class="space"></div>
-
-    <div class="muted">
-      iPhone’da “Paylaş → Ana Ekrana Ekle” ile uygulama gibi kullanırsın.
     </div>
   </div>
 
-  <script src="app.js"></script>
+<script>
+  // ---------------------------
+  // DATA
+  // ---------------------------
+  const DEFAULT_DEMO = [
+    ["baş ağrısı", "headache", ""],
+    ["kaza", "accident", ""],
+    ["sigorta", "insurance", ""],
+    ["kalabalık", "crowded", ""],
+    ["kıskanç", "jealous", ""],
+    ["sebzeler", "vegetables", ""],
+    ["mandalina", "tangerine", ""],
+    ["çilek", "strawberries", ""],
+  ];
+
+  const state = {
+    mode: "TR_EN", // or EN_TR
+    cards: [],
+    i: 0,
+    flipped: false,
+    stats: new Map(), // index -> {good,bad}
+  };
+
+  // ---------------------------
+  // HELPERS
+  // ---------------------------
+  const $ = (id) => document.getElementById(id);
+
+  function normalizeLine(line){
+    // Accept TSV or "a\tb\tc"
+    const parts = line.split("\t").map(s => s.trim()).filter(Boolean);
+    if(parts.length < 2) return null;
+    const tr = parts[0];
+    const en = parts[1];
+    const img = parts[2] || "";
+    return [tr, en, img];
+  }
+
+  function bestImageQueryFromEnglish(en){
+    // Make a simple keyword from phrases
+    // e.g. "once in a while" -> "time"
+    const stop = new Set(["to","a","an","the","in","on","of","and","or","while","someone","them","be"]);
+    const tokens = en.toLowerCase()
+      .replace(/[()\/,.;:!?]/g," ")
+      .split(/\s+/)
+      .filter(t => t && !stop.has(t));
+    return (tokens[0] || "english").trim();
+  }
+
+  function imageUrlForCard(card){
+    const [tr, en, img] = card;
+    if(img && img.startsWith("http")) return img;
+    const q = encodeURIComponent(bestImageQueryFromEnglish(en));
+    // Random but relevant image
+    return `https://source.unsplash.com/900x560/?${q}`;
+  }
+
+  function render(){
+    const total = state.cards.length;
+    $("progressPill").textContent = total ? `${state.i+1} / ${total}` : "0 / 0";
+    $("modePill").textContent = state.mode === "TR_EN" ? "TR → EN" : "EN → TR";
+
+    if(!total){
+      $("question").textContent = "Kelimeleri içe aktar";
+      $("answer").textContent = "Cevap gizli";
+      $("img").src = "data:image/svg+xml;utf8," + encodeURIComponent(`
+        <svg xmlns='http://www.w3.org/2000/svg' width='900' height='560'>
+          <rect width='100%' height='100%' fill='#0e1620'/>
+          <text x='50%' y='50%' fill='#9fb6cc' font-size='28' font-family='Arial' text-anchor='middle'>No cards</text>
+        </svg>
+      `);
+      $("imgCap").textContent = "image";
+      return;
+    }
+
+    const card = state.cards[state.i];
+    const [tr, en] = card;
+
+    const q = state.mode === "TR_EN" ? tr : en;
+    const a = state.mode === "TR_EN" ? en : tr;
+
+    $("question").textContent = q;
+    $("answer").textContent = state.flipped ? a : "Cevap gizli";
+
+    const imgUrl = imageUrlForCard(card);
+    $("img").src = imgUrl;
+    $("imgCap").textContent = state.mode === "TR_EN" ? en : tr;
+
+    $("btnPrev").disabled = state.i === 0;
+    $("btnNext").disabled = state.i === total - 1;
+  }
+
+  function flip(){
+    if(!state.cards.length) return;
+    state.flipped = !state.flipped;
+    render();
+  }
+
+  function next(){
+    if(state.i < state.cards.length - 1){
+      state.i++;
+      state.flipped = false;
+      render();
+    }
+  }
+
+  function prev(){
+    if(state.i > 0){
+      state.i--;
+      state.flipped = false;
+      render();
+    }
+  }
+
+  function shuffle(){
+    // Fisher-Yates
+    for(let i = state.cards.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i+1));
+      [state.cards[i], state.cards[j]] = [state.cards[j], state.cards[i]];
+    }
+    state.i = 0;
+    state.flipped = false;
+    render();
+  }
+
+  function resetAll(){
+    state.i = 0;
+    state.flipped = false;
+    state.stats.clear();
+    render();
+  }
+
+  function mark(result){
+    if(!state.cards.length) return;
+    const rec = state.stats.get(state.i) || {good:0, bad:0};
+    if(result === "good") rec.good++;
+    else rec.bad++;
+    state.stats.set(state.i, rec);
+    next();
+  }
+
+  function setMode(){
+    state.mode = state.mode === "TR_EN" ? "EN_TR" : "TR_EN";
+    state.flipped = false;
+    render();
+  }
+
+  function importFromTextarea(){
+    const lines = $("input").value
+      .split("\n")
+      .map(l => l.trim())
+      .filter(Boolean);
+
+    const cards = [];
+    for(const line of lines){
+      const card = normalizeLine(line);
+      if(card) cards.push(card);
+    }
+
+    state.cards = cards;
+    state.i = 0;
+    state.flipped = false;
+    render();
+  }
+
+  function exportTSV(){
+    const tsv = state.cards.map(([tr,en,img]) => [tr,en,img].filter(Boolean).join("\t")).join("\n");
+    const blob = new Blob([tsv], {type:"text/tab-separated-values"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "my-vocab.tsv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function loadDemo(){
+    $("input").value = DEFAULT_DEMO.map(([tr,en,img]) => [tr,en,img].filter(Boolean).join("\t")).join("\n");
+    importFromTextarea();
+  }
+
+  // ---------------------------
+  // EVENTS
+  // ---------------------------
+  $("btnFlip").addEventListener("click", flip);
+  $("btnNext").addEventListener("click", next);
+  $("btnPrev").addEventListener("click", prev);
+  $("btnMode").addEventListener("click", setMode);
+  $("btnShuffle").addEventListener("click", shuffle);
+  $("btnReset").addEventListener("click", resetAll);
+  $("btnGood").addEventListener("click", () => mark("good"));
+  $("btnBad").addEventListener("click", () => mark("bad"));
+  $("btnImport").addEventListener("click", importFromTextarea);
+  $("btnExport").addEventListener("click", exportTSV);
+  $("btnLoadDemo").addEventListener("click", loadDemo);
+
+  window.addEventListener("keydown", (e) => {
+    if(e.code === "Space"){ e.preventDefault(); flip(); }
+    if(e.key === "ArrowRight"){ next(); }
+    if(e.key === "ArrowLeft"){ prev(); }
+  });
+
+  // Boot
+  loadDemo();
+</script>
 </body>
 </html>
